@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Панель управления</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2rem; }
+        button { padding: 0.8rem 1.5rem; font-size: 1rem; cursor: pointer; margin: 0.5rem 0; }
+        #status { color: gray; margin-left: 1rem; }
+        img { max-width: 80%; border: 2px solid #ccc; margin-top: 1rem; display: block; }
+    </style>
+</head>
+<body>
+    <h1>Панель управления</h1>
+    <button onclick="sendRickroll()">Запустить Рикролл</button>
+    <span id="status">Ожидание подключения...</span>
+
+    <h2>Скриншот с устройства</h2>
+    <img id="screenshot" src="" alt="Скриншот ещё не получен" />
+
+    <!-- Firebase JS SDK (compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <script>
+        // Конфигурация Firebase – добавлен databaseURL
+        const firebaseConfig = {
+            apiKey: "AIzaSyAAb2d_IOCpDO_niqfkjfWddhpZo0yaDOM",
+            authDomain: "gen-lang-client-0884792103.firebaseapp.com",
+            projectId: "gen-lang-client-0884792103",
+            storageBucket: "gen-lang-client-0884792103.firebasestorage.app",
+            messagingSenderId: "556057210756",
+            appId: "1:556057210756:web:45677d6e28066be811f7d1",
+            databaseURL: "https://gen-lang-client-0884792103-default-rtdb.firebaseio.com/"
+        };
+
+        // Инициализация Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Элементы интерфейса
+        const statusEl = document.getElementById('status');
+        const screenshotImg = document.getElementById('screenshot');
+
+        // Слушатель обновлений скриншота
+        db.ref('/screen').on('value', (snapshot) => {
+            const base64Data = snapshot.val();
+            if (base64Data) {
+                // Предполагаем, что данные уже в формате PNG base64
+                screenshotImg.src = `data:image/png;base64,${base64Data}`;
+            } else {
+                // Если данных нет – показываем заглушку
+                screenshotImg.src = '';
+                screenshotImg.alt = 'Нет скриншота';
+            }
+        });
+
+        // Проверка подключения
+        db.ref('.info/connected').on('value', (snap) => {
+            if (snap.val() === true) {
+                statusEl.textContent = '✅ Подключено';
+                statusEl.style.color = 'green';
+            } else {
+                statusEl.textContent = '❌ Отключено';
+                statusEl.style.color = 'red';
+            }
+        });
+
+        // Функция отправки команды
+        function sendRickroll() {
+            db.ref('/command').set('rickroll')
+                .then(() => console.log('Команда отправлена'))
+                .catch((err) => alert('Ошибка: ' + err.message));
+        }
+    </script>
+</body>
+</html>
