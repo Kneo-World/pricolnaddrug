@@ -3,180 +3,90 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Remote Control Panel</title>
-  <!-- Bootstrap 5 Dark Mode -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <title>Remote Admin Panel</title>
+  <!-- Bootstrap 5 Darkly theme (bootswatch) -->
+  <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/darkly/bootstrap.min.css" rel="stylesheet">
   <style>
-    :root {
-      --bg-color: #0a0f0a;
-      --terminal-green: #00ff41;
-      --terminal-green-dim: #00cc33;
-      --dark-panel: #0d1a0d;
-      --border-color: #1a3a1a;
-      --text-color: #c0ffc0;
-      --hover-color: #1a2a1a;
-    }
     body {
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      font-family: 'Courier New', monospace;
-      overflow: hidden;
-    }
-    .hacker-panel {
-      height: 100vh;
-      display: flex;
+      background-color: #111;
+      color: #ccc;
     }
     .sidebar {
-      background-color: #0b120b;
-      border-right: 1px solid var(--border-color);
-      width: 280px;
+      background-color: #1a1a1a;
+      border-right: 1px solid #333;
+      min-height: 100vh;
       padding: 15px;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 0 10px rgba(0, 255, 65, 0.1);
-    }
-    .sidebar h4 {
-      color: var(--terminal-green);
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      margin-bottom: 20px;
-      font-weight: 700;
-      text-shadow: 0 0 8px rgba(0, 255, 65, 0.5);
-    }
-    .client-list {
-      flex: 1;
-      overflow-y: auto;
-      padding: 0;
-      list-style: none;
     }
     .client-item {
-      padding: 10px 15px;
-      margin-bottom: 4px;
-      border: 1px solid transparent;
-      border-radius: 4px;
+      padding: 8px 12px;
       cursor: pointer;
-      color: #9fef9f;
-      transition: all 0.2s;
-      font-size: 14px;
+      border-radius: 4px;
+      transition: background 0.2s;
       display: flex;
       align-items: center;
+      margin-bottom: 4px;
     }
     .client-item:hover {
-      background-color: var(--hover-color);
-      border-color: var(--terminal-green-dim);
+      background-color: #2a2a2a;
     }
     .client-item.active {
-      background-color: #0a2f0a;
-      border-color: var(--terminal-green);
-      color: #fff;
-      text-shadow: 0 0 5px var(--terminal-green);
+      background-color: #3a3a3a;
+      font-weight: bold;
     }
-    .status-indicator {
-      width: 10px;
-      height: 10px;
+    .status-dot {
+      width: 12px;
+      height: 12px;
       border-radius: 50%;
       margin-right: 8px;
-      background-color: #555;
+      background: gray;
     }
-    .status-indicator.online {
-      background-color: #00ff00;
-      box-shadow: 0 0 8px #00ff00;
+    .status-dot.online {
+      background: #00cc00;
+      box-shadow: 0 0 5px #00cc00;
     }
-    .status-indicator.offline {
-      background-color: #ff3333;
-      box-shadow: 0 0 5px #ff0000;
+    .status-dot.offline {
+      background: #555;
     }
-    .main-content {
-      flex: 1;
-      padding: 20px;
-      overflow-y: auto;
-    }
-    .screen-card {
-      background-color: var(--dark-panel);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 15px;
-      margin-bottom: 20px;
-      box-shadow: 0 0 15px rgba(0, 255, 65, 0.1);
-    }
-    .screen-card h5 {
-      color: var(--terminal-green);
-      margin-bottom: 12px;
-    }
-    .screenshot-img {
-      width: 100%;
-      max-height: 400px;
-      object-fit: contain;
-      border: 1px solid var(--border-color);
-      background: #000;
-    }
-    .command-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 10px;
-      margin-top: 10px;
-    }
-    .btn-hacker {
-      background-color: transparent;
-      border: 1px solid var(--terminal-green);
-      color: var(--terminal-green);
-      font-family: 'Courier New', monospace;
+    .btn-danger-big {
+      padding: 1.2rem 2rem;
+      font-size: 1.5rem;
+      font-weight: bold;
       text-transform: uppercase;
-      letter-spacing: 1px;
-      transition: all 0.2s;
-    }
-    .btn-hacker:hover {
-      background-color: var(--terminal-green);
-      color: #000;
-      box-shadow: 0 0 12px var(--terminal-green);
-    }
-    .form-control-dark {
-      background-color: #0f1f0f;
-      border: 1px solid var(--border-color);
-      color: var(--terminal-green);
-      font-family: 'Courier New', monospace;
-    }
-    .form-control-dark:focus {
-      border-color: var(--terminal-green);
-      box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
-    }
-    .footer-status {
-      color: #5a7a5a;
-      font-size: 12px;
-      margin-top: 10px;
-      text-align: right;
+      letter-spacing: 2px;
     }
   </style>
 </head>
 <body>
-  <div class="hacker-panel">
-    <!-- Sidebar -->
-    <div class="sidebar">
-      <h4>⚡ Clients</h4>
-      <ul class="client-list" id="clientList">
-        <li class="text-muted">Loading...</li>
-      </ul>
-      <div class="footer-status">
-        <span id="connectionStatus">🔗 Connecting...</span>
-      </div>
-    </div>
+  <div class="container-fluid">
+    <div class="row">
+      <!-- Sidebar client list -->
+      <nav class="col-md-3 col-lg-2 sidebar">
+        <h4 class="text-success mb-3">🖥 Clients</h4>
+        <div id="clientList" class="list-group list-group-flush">
+          <div class="text-muted">Waiting for clients...</div>
+        </div>
+        <div class="mt-3 text-secondary small">
+          <span id="connectionStatus">🔗 Connecting...</span>
+        </div>
+      </nav>
 
-    <!-- Main Content -->
-    <div class="main-content" id="mainContent">
-      <div class="d-flex justify-content-center align-items-center h-100">
-        <p style="color: #3a5a3a; font-size: 18px;">← Select a client from the list</p>
-      </div>
+      <!-- Main panel -->
+      <main class="col-md-9 col-lg-10 mt-3">
+        <div id="mainContent">
+          <div class="alert alert-secondary">← Select a client from the left panel</div>
+        </div>
+      </main>
     </div>
   </div>
 
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-  <!-- Bootstrap JS -->
+  <!-- Bootstrap JS (for interactive components) -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
-    // Firebase configuration
+    // ---------- Firebase Config ----------
     const firebaseConfig = {
       apiKey: "AIzaSyAAb2d_IOCpDO_niqfkjfWddhpZo0yaDOM",
       authDomain: "gen-lang-client-0884792103.firebaseapp.com",
@@ -186,187 +96,202 @@
       appId: "1:556057210756:web:45677d6e28066be811f7d1",
       databaseURL: "https://gen-lang-client-0884792103-default-rtdb.firebaseio.com/"
     };
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // State
-    let selectedClientId = null;
-    let screenListener = null;
-    let heartbeatListener = null;
-    let clientsRef = db.ref('clients');
-    let clientItems = {}; // id -> DOM element
+    // ---------- State ----------
+    let currentTarget = null;                // selected client ID
+    const clientData = {};                   // id -> { last_seen: timestamp, ... }
+    const clientElements = {};               // id -> DOM li element
+    const statusDots = {};                   // id -> DOM dot element
 
-    // Connection status
-    db.ref('.info/connected').on('value', (snap) => {
-      const el = document.getElementById('connectionStatus');
-      if (snap.val() === true) {
-        el.innerHTML = '🟢 CONNECTED';
-        el.style.color = '#00ff41';
-      } else {
-        el.innerHTML = '🔴 DISCONNECTED';
-        el.style.color = '#ff3333';
+    // ---------- Helper: update status dot based on last_seen ----------
+    function updateStatusDot(clientId) {
+      const dot = statusDots[clientId];
+      if (!dot) return;
+      const data = clientData[clientId];
+      if (!data || !data.last_seen) {
+        dot.className = 'status-dot offline';
+        return;
       }
-    });
+      const now = Date.now();
+      const diff = now - data.last_seen;
+      if (diff < 60000) { // 1 minute
+        dot.className = 'status-dot online';
+      } else {
+        dot.className = 'status-dot offline';
+      }
+    }
 
-    // Clients list handling
-    clientsRef.on('child_added', (snapshot) => {
-      const clientId = snapshot.key;
+    // Periodic status check every 2 seconds
+    setInterval(() => {
+      Object.keys(clientData).forEach(id => updateStatusDot(id));
+    }, 2000);
+
+    // ---------- Firebase listeners for clients ----------
+    const clientsRef = db.ref('clients');
+
+    clientsRef.on('child_added', (snap) => {
+      const clientId = snap.key;
+      const val = snap.val() || {};
+      // Store data
+      clientData[clientId] = {
+        last_seen: val.last_seen || null,
+        // other fields can be stored if needed
+      };
+      // Create UI element
       addClientToList(clientId);
     });
 
-    clientsRef.on('child_removed', (snapshot) => {
-      const clientId = snapshot.key;
-      removeClientFromList(clientId);
-      if (selectedClientId === clientId) {
-        clearMainPanel();
+    clientsRef.on('child_changed', (snap) => {
+      const clientId = snap.key;
+      const val = snap.val() || {};
+      if (clientData[clientId]) {
+        clientData[clientId].last_seen = val.last_seen;
+        updateStatusDot(clientId);
       }
     });
 
+    clientsRef.on('child_removed', (snap) => {
+      const clientId = snap.key;
+      removeClientFromList(clientId);
+      delete clientData[clientId];
+      if (currentTarget === clientId) {
+        currentTarget = null;
+        renderMainPanel();
+      }
+    });
+
+    // ---------- UI functions ----------
     function addClientToList(clientId) {
       const list = document.getElementById('clientList');
       // Remove placeholder if present
-      if (list.querySelector('.text-muted')) {
-        list.innerHTML = '';
-      }
-      const li = document.createElement('li');
-      li.className = 'client-item';
-      li.dataset.clientId = clientId;
-      li.innerHTML = `<span class="status-indicator offline" id="status-${clientId}"></span> ${clientId}`;
-      li.addEventListener('click', () => selectClient(clientId));
-      list.appendChild(li);
-      clientItems[clientId] = li;
+      if (list.querySelector('.text-muted')) list.innerHTML = '';
 
-      // Start listening to heartbeat for status
-      const heartbeatRef = db.ref(`clients/${clientId}/last_seen`);
-      heartbeatRef.on('value', (snap) => {
-        updateClientStatus(clientId, snap.val());
-      });
+      const item = document.createElement('div');
+      item.className = 'client-item';
+      item.dataset.clientId = clientId;
+      item.innerHTML = `
+        <span class="status-dot offline" id="dot-${clientId}"></span>
+        <span>${clientId}</span>
+      `;
+      item.addEventListener('click', () => selectClient(clientId));
+      list.appendChild(item);
+      clientElements[clientId] = item;
+      statusDots[clientId] = item.querySelector('.status-dot');
+      // initial update
+      updateStatusDot(clientId);
     }
 
     function removeClientFromList(clientId) {
-      const li = clientItems[clientId];
-      if (li) {
-        li.remove();
-        delete clientItems[clientId];
-        // Stop heartbeat listener? It will be cleaned when ref goes out of scope, but we can off for cleanliness.
-        db.ref(`clients/${clientId}/last_seen`).off();
-      }
-    }
-
-    function updateClientStatus(clientId, lastSeen) {
-      const indicator = document.getElementById(`status-${clientId}`);
-      if (!indicator) return;
-      const now = Date.now();
-      const isOnline = lastSeen && (now - lastSeen < 30000); // 30 seconds threshold
-      indicator.className = `status-indicator ${isOnline ? 'online' : 'offline'}`;
+      const item = clientElements[clientId];
+      if (item) item.remove();
+      delete clientElements[clientId];
+      delete statusDots[clientId];
     }
 
     function selectClient(clientId) {
       // Deactivate previous
-      if (selectedClientId) {
-        const prev = clientItems[selectedClientId];
-        if (prev) prev.classList.remove('active');
-        // Remove old listeners
-        if (screenListener) {
-          db.ref(`clients/${selectedClientId}/last_screen`).off('value', screenListener);
-          screenListener = null;
-        }
+      if (currentTarget && clientElements[currentTarget]) {
+        clientElements[currentTarget].classList.remove('active');
       }
-      selectedClientId = clientId;
-      // Activate new
-      const curr = clientItems[clientId];
-      if (curr) curr.classList.add('active');
-      renderMainPanel(clientId);
+      currentTarget = clientId;
+      if (clientElements[currentTarget]) {
+        clientElements[currentTarget].classList.add('active');
+      }
+      renderMainPanel();
     }
 
-    function renderMainPanel(clientId) {
+    // ---------- Main panel rendering ----------
+    function renderMainPanel() {
       const main = document.getElementById('mainContent');
+      if (!currentTarget) {
+        main.innerHTML = '<div class="alert alert-secondary">← Select a client from the left panel</div>';
+        return;
+      }
+
       main.innerHTML = `
-        <div class="screen-card">
-          <h5>📷 Live Screen - ${clientId}</h5>
-          <img id="screenshotImg" class="screenshot-img" src="" alt="No screenshot yet" />
-          <div class="d-flex justify-content-between align-items-center mt-2">
-            <span class="footer-status" id="screenTimestamp"></span>
-            <button class="btn btn-hacker btn-sm" onclick="requestScreenshot()">Request Screenshot</button>
+        <div class="card bg-dark border-secondary mb-3">
+          <div class="card-header bg-dark border-secondary">
+            <h4 class="text-success">🖥 Managing: ${currentTarget}</h4>
           </div>
-        </div>
-        <div class="screen-card">
-          <h5>🕹️ Command Center</h5>
-          <div class="command-grid">
-            <button class="btn btn-hacker" onclick="sendCommand('rickroll')">🎵 Rickroll</button>
-            <button class="btn btn-hacker" onclick="sendCommand('crazy_mouse')">🐭 Crazy Mouse</button>
-            <button class="btn btn-hacker" onclick="sendCommand('block_input')">🔒 Block Input</button>
-          </div>
-          <div class="mt-3">
-            <label class="form-label">Message to client</label>
-            <div class="input-group">
-              <input type="text" class="form-control form-control-dark" id="msgPayload" placeholder="Type a message...">
-              <button class="btn btn-hacker" onclick="sendMessage()">Send Message</button>
+          <div class="card-body">
+            <!-- Big red screenshot button -->
+            <button class="btn btn-danger btn-lg w-100 btn-danger-big mb-3" onclick="requestScreenshot()">
+              📸 ОБНОВИТЬ СКРИНШОТ
+            </button>
+
+            <!-- Other command buttons -->
+            <div class="row g-2">
+              <div class="col-6">
+                <button class="btn btn-outline-warning w-100" onclick="sendCommand('rickroll')">🎵 Rickroll</button>
+              </div>
+              <div class="col-6">
+                <button class="btn btn-outline-warning w-100" onclick="sendCommand('crazy_mouse')">🐭 Crazy Mouse</button>
+              </div>
+              <div class="col-6">
+                <button class="btn btn-outline-warning w-100" onclick="sendCommand('block_input')">🔒 Block Input</button>
+              </div>
+              <div class="col-6">
+                <button class="btn btn-outline-warning w-100" onclick="sendCommand('screenshot')">📷 Screenshot</button>
+              </div>
+            </div>
+
+            <!-- Message section -->
+            <div class="mt-3">
+              <label class="form-label">Message to client</label>
+              <div class="input-group">
+                <input type="text" id="msgPayload" class="form-control" placeholder="Enter message...">
+                <button class="btn btn-outline-primary" onclick="sendMessage()">Send</button>
+              </div>
             </div>
           </div>
         </div>
       `;
-
-      // Attach screen listener
-      const screenRef = db.ref(`clients/${clientId}/last_screen`);
-      screenListener = screenRef.on('value', (snap) => {
-        const base64 = snap.val();
-        const img = document.getElementById('screenshotImg');
-        const ts = document.getElementById('screenTimestamp');
-        if (img) {
-          if (base64) {
-            // Assume JPEG base64
-            img.src = `data:image/jpeg;base64,${base64}`;
-            if (ts) ts.textContent = `Last update: ${new Date().toLocaleTimeString()}`;
-          } else {
-            img.src = '';
-            if (ts) ts.textContent = 'No screenshot available';
-          }
-        }
-      });
-
-      // Heartbeat listener for status updated in sidebar already, but we could also listen here for immediate update
-      // Already handled globally.
     }
 
-    function clearMainPanel() {
-      const main = document.getElementById('mainContent');
-      main.innerHTML = `<div class="d-flex justify-content-center align-items-center h-100">
-        <p style="color: #3a5a3a; font-size: 18px;">← Select a client from the list</p>
-      </div>`;
-      selectedClientId = null;
-      if (screenListener) {
-        // screenListener is a callback, we must off
-        db.ref(`clients/${selectedClientId}/last_screen`).off('value', screenListener);
-        screenListener = null;
-      }
-    }
-
-    // Command functions
+    // ---------- Command functions ----------
     function sendCommand(cmd) {
-      if (!selectedClientId) return alert('No client selected');
-      db.ref(`clients/${selectedClientId}/command`).set(cmd)
-        .catch(err => console.error(err));
+      if (!currentTarget) {
+        alert('No client selected');
+        return;
+      }
+      db.ref(`clients/${currentTarget}/command`).set(cmd);
     }
 
     function sendMessage() {
-      if (!selectedClientId) return alert('No client selected');
+      if (!currentTarget) {
+        alert('No client selected');
+        return;
+      }
       const input = document.getElementById('msgPayload');
       const text = input.value.trim();
       if (!text) return;
       // Set payload then command
-      db.ref(`clients/${selectedClientId}/payload`).set(text)
-        .then(() => db.ref(`clients/${selectedClientId}/command`).set('msg'))
+      db.ref(`clients/${currentTarget}/payload`).set(text)
+        .then(() => db.ref(`clients/${currentTarget}/command`).set('msg'))
         .then(() => input.value = '')
         .catch(err => console.error(err));
     }
 
     function requestScreenshot() {
-      if (!selectedClientId) return;
-      db.ref(`clients/${selectedClientId}/command`).set('screenshot')
-        .catch(err => console.error(err));
+      if (!currentTarget) {
+        alert('No client selected');
+        return;
+      }
+      // Set the get_screen flag to true
+      db.ref(`clients/${currentTarget}/get_screen`).set(true);
     }
+
+    // Connection status
+    db.ref('.info/connected').on('value', (snap) => {
+      const el = document.getElementById('connectionStatus');
+      if (snap.val() === true) {
+        el.innerHTML = '🟢 Connected';
+      } else {
+        el.innerHTML = '🔴 Disconnected';
+      }
+    });
   </script>
 </body>
 </html>
